@@ -84,17 +84,20 @@ npm run format:check
 ## Project Structure
 
 ```
-project/
+capslock/
+├── README.md                       # This file - setup, tests, defects
 ├── START-HERE.md                   # Quick start guide
-├── TEST-SCENARIOS.md               # All 47 scenarios + top 5 priorities
-├── TRIAL-TASK-SUMMARY.md           # Complete implementation summary
-├── README.md                       # This file
+├── TEST-SCENARIOS.md               # All 53 scenarios + top 5 priorities
 ├── tests/
 │   └── top-5-scenarios.spec.ts    # 5 implemented priority tests
 ├── playwright.config.ts            # Playwright configuration
 ├── package.json                    # Dependencies and scripts
+├── tsconfig.json                   # TypeScript configuration
+├── .prettierrc                     # Code formatting rules
+├── .gitignore                      # Git ignore patterns
 ├── test-results/                   # Test artifacts (screenshots, videos)
-└── playwright-report/              # HTML test reports
+├── playwright-report/              # HTML test reports
+└── node_modules/                   # Dependencies (after npm install)
 ```
 
 ## Test Scenarios
