@@ -1,4 +1,6 @@
 import { test, expect } from '@playwright/test';
+import { FormPage } from './pages/form-page';
+import { TEST_DATA } from './test-data';
 
 /**
  * Top 5 Highest-Priority Test Scenarios
@@ -24,59 +26,48 @@ test.describe('Walk-In Bath Form - Top 5 Critical Scenarios', () => {
   test('should complete entire form flow with valid data and reach confirmation', async ({
     page,
   }) => {
-    await page.goto('/');
+    const formPage = new FormPage(page);
+    await formPage.goto();
 
     // Step 1: Enter valid ZIP code
-    await page
-      .locator('#form-container-1')
-      .getByRole('textbox', { name: 'Enter ZIP Code' })
-      .fill('68901');
-    await page.locator('#form-container-1').getByRole('button', { name: 'Next' }).click();
-
-    // Wait for step 2 to load
-    await page.waitForLoadState('networkidle');
+    await formPage.submitZipCode(TEST_DATA.zipCodes.valid);
 
     // Step 2: Select reason for interest
-    const reasonHeading = page.locator('text=/Why are you interested/i').first();
-    await expect(reasonHeading).toBeVisible({ timeout: 10000 });
+    const reasonHeading = formPage.message(TEST_DATA.messages.reasonQuestion);
+    await expect(reasonHeading).toBeVisible({ timeout: TEST_DATA.timeouts.navigation });
 
-    await page.locator('#form-container-1').getByText('Safety').click();
-    await page.locator('#form-container-1').getByRole('button', { name: 'Next' }).click();
-
-    // Wait for step 3 to load
-    await page.waitForLoadState('networkidle');
+    await formPage.selectReason('Safety');
 
     // Step 3: Select property type
-    const propertyHeading = page.locator('text=/What type of property/i').first();
-    await expect(propertyHeading).toBeVisible({ timeout: 10000 });
+    const propertyHeading = formPage.message(TEST_DATA.messages.propertyQuestion);
+    await expect(propertyHeading).toBeVisible({ timeout: TEST_DATA.timeouts.navigation });
 
-    await page.locator('#form-container-1').getByText('Owned House / Condo').click();
-    await page.locator('#form-container-1').getByRole('button', { name: 'Next' }).click();
-
-    // Wait for step 4 to load
-    await page.waitForLoadState('networkidle');
+    await formPage.selectPropertyType(TEST_DATA.propertyTypes.ownedHouse);
 
     // Step 4: Fill name and email
     await page
-      .locator('#form-container-1')
+      .locator(TEST_DATA.selectors.formContainer)
       .getByRole('textbox', { name: 'Enter Your Name' })
       .fill('John Doe');
     await page
-      .locator('#form-container-1')
+      .locator(TEST_DATA.selectors.formContainer)
       .getByRole('textbox', { name: 'Enter Your Email' })
-      .fill('test@example.com');
-    await page.locator('#form-container-1').getByRole('button', { name: 'Go To Estimate' }).click();
+      .fill(TEST_DATA.contactInfo.valid.email);
+    await page
+      .locator(TEST_DATA.selectors.formContainer)
+      .getByRole('button', { name: 'Go To Estimate' })
+      .click();
 
     // Wait for step 5 to load
     await page.waitForLoadState('networkidle');
 
     // Step 5: Fill phone number and submit
     await page
-      .locator('#form-container-1')
+      .locator(TEST_DATA.selectors.formContainer)
       .getByRole('textbox', { name: '(XXX)XXX-XXXX' })
-      .fill('4025551234');
+      .fill(TEST_DATA.contactInfo.valid.phone);
     await page
-      .locator('#form-container-1')
+      .locator(TEST_DATA.selectors.formContainer)
       .getByRole('button', { name: 'Submit Your Request' })
       .click();
 
@@ -86,7 +77,7 @@ test.describe('Walk-In Bath Form - Top 5 Critical Scenarios', () => {
     // Verify thank you page is displayed
     await expect(page).toHaveURL(/\/thankyou/);
     const thankYouHeading = page.locator('h1:has-text("Thank you!")').first();
-    await expect(thankYouHeading).toBeVisible({ timeout: 10000 });
+    await expect(thankYouHeading).toBeVisible({ timeout: TEST_DATA.timeouts.navigation });
   });
 
   /**
@@ -102,42 +93,36 @@ test.describe('Walk-In Bath Form - Top 5 Critical Scenarios', () => {
    * - Valid 5-digit ZIP codes are accepted
    */
   test('should validate ZIP code is required and properly formatted', async ({ page }) => {
-    await page.goto('/');
-
-    const zipInput = page
-      .locator('#form-container-1')
-      .getByRole('textbox', { name: 'Enter ZIP Code' });
-    const nextButton = page.locator('#form-container-1').getByRole('button', { name: 'Next' });
+    const formPage = new FormPage(page);
+    await formPage.goto();
 
     // Test 1: Empty ZIP should not allow progression
-    await nextButton.click();
-    await page.waitForTimeout(500);
+    await formPage.clickNext();
+    await page.waitForTimeout(TEST_DATA.timeouts.short);
 
     // Should still be on step 1 (ZIP input still visible)
-    const stillOnStep1 = await zipInput.isVisible();
+    const stillOnStep1 = await formPage.zipInput.isVisible();
     expect(stillOnStep1).toBeTruthy();
 
     // Test 2: Invalid format (too short)
-    await zipInput.fill('1234');
-    await nextButton.click();
-    await page.waitForTimeout(1000);
+    await formPage.enterZipCode(TEST_DATA.zipCodes.invalid.tooShort);
+    await formPage.clickNext();
+    await page.waitForTimeout(TEST_DATA.timeouts.medium);
 
     // Check if validation prevents progression or shows error
-    const isInvalid = await zipInput.evaluate((el: any) => !el.validity.valid);
-    const stillVisible = await zipInput.isVisible();
+    const isInvalid = await formPage.zipInput.evaluate((el: any) => !el.validity.valid);
+    const stillVisible = await formPage.zipInput.isVisible();
 
     // Either validation fails or we're still on step 1
     expect(isInvalid || stillVisible).toBeTruthy();
 
     // Test 3: Valid ZIP should allow progression
-    await zipInput.fill('');
-    await zipInput.fill('68901');
-    await nextButton.click();
-    await page.waitForLoadState('networkidle');
+    await formPage.enterZipCode('');
+    await formPage.submitZipCode(TEST_DATA.zipCodes.valid);
 
     // Should progress to reason selection
-    const reasonHeading = page.locator('text=/Why are you interested/i').first();
-    await expect(reasonHeading).toBeVisible({ timeout: 10000 });
+    const reasonHeading = formPage.message(TEST_DATA.messages.reasonQuestion);
+    await expect(reasonHeading).toBeVisible({ timeout: TEST_DATA.timeouts.navigation });
   });
 
   /**
@@ -156,64 +141,51 @@ test.describe('Walk-In Bath Form - Top 5 Critical Scenarios', () => {
    * - In-area ZIP codes progress normally
    */
   test('should show appropriate message for out-of-service-area ZIP codes', async ({ page }) => {
-    await page.goto('/');
+    const formPage = new FormPage(page);
+    await formPage.goto();
 
     // Test with out-of-service-area ZIP
-    await page
-      .locator('#form-container-1')
-      .getByRole('textbox', { name: 'Enter ZIP Code' })
-      .fill('11111');
-    await page.locator('#form-container-1').getByRole('button', { name: 'Next' }).click();
-    await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(2000);
+    await formPage.submitZipCode(TEST_DATA.zipCodes.outOfArea);
+    await page.waitForTimeout(TEST_DATA.timeouts.long);
 
     // Should show out-of-area message
-    const outOfAreaMessage = page.locator('#form-container-1').locator('text=/sorry/i').first();
-    await expect(outOfAreaMessage).toBeVisible({ timeout: 15000 });
+    const outOfAreaMessage = formPage.containerMessage(TEST_DATA.messages.outOfAreaShort);
+    await expect(outOfAreaMessage).toBeVisible({ timeout: TEST_DATA.timeouts.extended });
 
     // Should show email opt-in field
-    const emailOptIn = page.locator('input[placeholder="Email Address"]').first();
-    await expect(emailOptIn).toBeVisible();
+    await expect(formPage.emailOptInInput).toBeVisible();
 
     // Test email validation - empty email
-    const submitButton = page.locator('#form-container-1').getByRole('button', { name: 'Submit' });
-    await submitButton.click();
-    await page.waitForTimeout(500);
+    await formPage.submitEmailOptIn();
 
     // Should show validation error for empty email
-    const emptyEmailError = page.locator('text=/enter your email address/i').first();
-    await expect(emptyEmailError).toBeVisible({ timeout: 5000 });
+    const emptyEmailError = formPage.message(TEST_DATA.messages.emailRequired);
+    await expect(emptyEmailError).toBeVisible({ timeout: TEST_DATA.timeouts.visibility });
 
     // Test email validation - invalid format
-    await emailOptIn.fill('invalid-email');
-    await submitButton.click();
-    await page.waitForTimeout(500);
+    await formPage.fillEmailOptIn(TEST_DATA.contactInfo.invalid.email);
+    await formPage.submitEmailOptIn();
 
     // Should show validation error for invalid email
-    const invalidEmailError = page.locator('text=/wrong email/i').first();
-    await expect(invalidEmailError).toBeVisible({ timeout: 5000 });
+    const invalidEmailError = formPage.message(TEST_DATA.messages.emailInvalid);
+    await expect(invalidEmailError).toBeVisible({ timeout: TEST_DATA.timeouts.visibility });
 
     // Test successful submission with valid email
-    await emailOptIn.fill('test@example.com');
-    await submitButton.click();
+    await formPage.fillEmailOptIn(TEST_DATA.contactInfo.valid.email);
+    await formPage.submitButton.click();
     await page.waitForLoadState('networkidle');
 
     // Should show success message
-    const successMessage = page.locator('text=/thank you for your interest/i').first();
-    await expect(successMessage).toBeVisible({ timeout: 10000 });
+    const successMessage = formPage.message(TEST_DATA.messages.thankYou);
+    await expect(successMessage).toBeVisible({ timeout: TEST_DATA.timeouts.navigation });
 
     // Test with known in-service-area ZIP
-    await page.goto('/');
-    await page
-      .locator('#form-container-1')
-      .getByRole('textbox', { name: 'Enter ZIP Code' })
-      .fill('68901');
-    await page.locator('#form-container-1').getByRole('button', { name: 'Next' }).click();
-    await page.waitForLoadState('networkidle');
+    await formPage.goto();
+    await formPage.submitZipCode(TEST_DATA.zipCodes.valid);
 
     // Should progress to reason selection
-    const reasonHeading = page.locator('text=/Why are you interested/i').first();
-    await expect(reasonHeading).toBeVisible({ timeout: 10000 });
+    const reasonHeading = formPage.message(TEST_DATA.messages.reasonQuestion);
+    await expect(reasonHeading).toBeVisible({ timeout: TEST_DATA.timeouts.navigation });
   });
 
   /**
@@ -229,27 +201,17 @@ test.describe('Walk-In Bath Form - Top 5 Critical Scenarios', () => {
    * - Form has proper input constraints for data quality
    */
   test('should validate all required fields with proper formats', async ({ page }) => {
-    await page.goto('/');
+    const formPage = new FormPage(page);
+    await formPage.goto();
 
     // Navigate to Step 4 (Name + Email)
-    await page
-      .locator('#form-container-1')
-      .getByRole('textbox', { name: 'Enter ZIP Code' })
-      .fill('68901');
-    await page.locator('#form-container-1').getByRole('button', { name: 'Next' }).click();
-    await page.waitForLoadState('networkidle');
-
-    await page.locator('#form-container-1').getByText('Safety').click();
-    await page.locator('#form-container-1').getByRole('button', { name: 'Next' }).click();
-    await page.waitForLoadState('networkidle');
-
-    await page.locator('#form-container-1').getByText('Owned House / Condo').click();
-    await page.locator('#form-container-1').getByRole('button', { name: 'Next' }).click();
-    await page.waitForLoadState('networkidle');
+    await formPage.submitZipCode(TEST_DATA.zipCodes.valid);
+    await formPage.selectReason('Safety');
+    await formPage.selectPropertyType(TEST_DATA.propertyTypes.ownedHouse);
 
     // Test email field exists and has correct type
     const emailInput = page
-      .locator('#form-container-1')
+      .locator(TEST_DATA.selectors.formContainer)
       .getByRole('textbox', { name: 'Enter Your Email' });
     await expect(emailInput).toBeVisible();
 
@@ -258,22 +220,25 @@ test.describe('Walk-In Bath Form - Top 5 Critical Scenarios', () => {
     expect(emailType).toBe('email');
 
     // Navigate to Step 5 (Phone)
-    await emailInput.fill('test@example.com');
+    await emailInput.fill(TEST_DATA.contactInfo.valid.email);
     await page
-      .locator('#form-container-1')
+      .locator(TEST_DATA.selectors.formContainer)
       .getByRole('textbox', { name: 'Enter Your Name' })
       .fill('John Doe');
-    await page.locator('#form-container-1').getByRole('button', { name: 'Go To Estimate' }).click();
+    await page
+      .locator(TEST_DATA.selectors.formContainer)
+      .getByRole('button', { name: 'Go To Estimate' })
+      .click();
     await page.waitForLoadState('networkidle');
 
     // Test phone field exists
     const phoneInput = page
-      .locator('#form-container-1')
+      .locator(TEST_DATA.selectors.formContainer)
       .getByRole('textbox', { name: '(XXX)XXX-XXXX' });
     await expect(phoneInput).toBeVisible();
 
     // Verify phone input accepts numeric input
-    await phoneInput.fill('4025551234');
+    await phoneInput.fill(TEST_DATA.contactInfo.valid.phone);
     const phoneValue = await phoneInput.inputValue();
     expect(phoneValue.length).toBeGreaterThan(0);
   });
@@ -293,39 +258,31 @@ test.describe('Walk-In Bath Form - Top 5 Critical Scenarios', () => {
    * Note: Previous/Back button doesn't exist (defect #2), so backward navigation cannot be tested.
    */
   test('should allow forward navigation through all form steps', async ({ page }) => {
-    await page.goto('/');
+    const formPage = new FormPage(page);
+    await formPage.goto();
 
     // Step 1: Enter ZIP code
-    await page
-      .locator('#form-container-1')
-      .getByRole('textbox', { name: 'Enter ZIP Code' })
-      .fill('68901');
-    await page.locator('#form-container-1').getByRole('button', { name: 'Next' }).click();
-    await page.waitForLoadState('networkidle');
+    await formPage.submitZipCode(TEST_DATA.zipCodes.valid);
 
     // Verify step 2 is displayed
-    const reasonHeading = page.locator('text=/Why are you interested/i').first();
-    await expect(reasonHeading).toBeVisible({ timeout: 10000 });
+    const reasonHeading = formPage.message(TEST_DATA.messages.reasonQuestion);
+    await expect(reasonHeading).toBeVisible({ timeout: TEST_DATA.timeouts.navigation });
 
     // Progress to step 3
-    await page.locator('#form-container-1').getByText('Safety').click();
-    await page.locator('#form-container-1').getByRole('button', { name: 'Next' }).click();
-    await page.waitForLoadState('networkidle');
+    await formPage.selectReason('Safety');
 
     // Verify step 3 is displayed
-    const propertyHeading = page.locator('text=/What type of property/i').first();
-    await expect(propertyHeading).toBeVisible({ timeout: 10000 });
+    const propertyHeading = formPage.message(TEST_DATA.messages.propertyQuestion);
+    await expect(propertyHeading).toBeVisible({ timeout: TEST_DATA.timeouts.navigation });
 
     // Progress to step 4
-    await page.locator('#form-container-1').getByText('Owned House / Condo').click();
-    await page.locator('#form-container-1').getByRole('button', { name: 'Next' }).click();
-    await page.waitForLoadState('networkidle');
+    await formPage.selectPropertyType(TEST_DATA.propertyTypes.ownedHouse);
 
     // Verify step 4 is displayed
     const nameInput = page
-      .locator('#form-container-1')
+      .locator(TEST_DATA.selectors.formContainer)
       .getByRole('textbox', { name: 'Enter Your Name' });
-    await expect(nameInput).toBeVisible({ timeout: 10000 });
+    await expect(nameInput).toBeVisible({ timeout: TEST_DATA.timeouts.navigation });
 
     // Verify progress indicator exists
     const progressIndicator = page.locator('text=/\\d+ of \\d+/').first();

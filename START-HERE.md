@@ -143,6 +143,6 @@ Tests were prioritized using a weighted scoring system:
 
 - All tests passing (5/5)
 - Zero flaky tests
-- Fast execution (~17 seconds)
+- Fast execution (~25 seconds)
 - Can run in parallel
 - Suitable for CI/CD pipeline

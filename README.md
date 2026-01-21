@@ -11,7 +11,6 @@ Playwright end-to-end tests for the Capslock Walk-In Bath form at `https://test-
 3. **Automated tests for the top 5 scenarios** - `tests/top-5-scenarios.spec.ts`
 4. **All tests passing** - 5/5 tests (100%)
 
-
 ## Setup
 
 Install dependencies:
@@ -89,7 +88,10 @@ capslock/
 ├── START-HERE.md                   # Quick start guide
 ├── TEST-SCENARIOS.md               # All 53 scenarios + top 5 priorities
 ├── tests/
-│   └── top-5-scenarios.spec.ts    # 5 implemented priority tests
+│   ├── top-5-scenarios.spec.ts    # 5 implemented priority tests
+│   ├── test-data.ts               # Centralized test data constants
+│   └── pages/
+│       └── form-page.ts           # Page Object Model for form
 ├── playwright.config.ts            # Playwright configuration
 ├── package.json                    # Dependencies and scripts
 ├── tsconfig.json                   # TypeScript configuration
@@ -172,9 +174,26 @@ See [TEST-SCENARIOS.md](TEST-SCENARIOS.md) for detailed prioritization logic.
 - Well-commented code explaining priority and purpose
 - Logical flow: Arrange → Act → Assert
 
+### Test Data Management
+
+**Centralized Test Data** (`tests/test-data.ts`):
+
+- Single source of truth for all test inputs and expected outputs
+- Type-safe constants for ZIP codes, contact info, URLs, messages, timeouts
+- Easy to maintain and update when requirements change
+- Semantic naming for better readability
+
+**Page Object Model** (`tests/pages/form-page.ts`):
+
+- Encapsulates all form interactions and element locators
+- Reusable methods for common actions (e.g., `submitZipCode()`, `selectReason()`)
+- Reduces code duplication across tests
+- Makes tests more maintainable and readable
+- Changes to UI only require updates in one place
+
 ### CI-Ready
 
-- Fast execution (~17 seconds for all 5 tests)
+- Fast execution (~25 seconds for all 5 tests)
 - Reproducible and deterministic
 - Parallel execution (4 workers)
 - No external dependencies
@@ -187,12 +206,14 @@ During test implementation, the following defects were discovered:
 
 **Severity**: Low  
 **Location**: Multiple steps (Step 3, Out-of-area thank you page)  
-**Expected Behavior**: 
+**Expected Behavior**:
+
 - Progress indicator should update correctly at each step (e.g., "3 of 5" on Step 3)
 - Progress indicator should be hidden on completion/thank you pages
 - When displayed, it should always show both current step and total (e.g., "X of Y")
 
-**Actual Behavior**: 
+**Actual Behavior**:
+
 - Progress indicator remains at "2 of 5" even after advancing to Step 3 (property type selection)
 - On out-of-area thank you page, shows incomplete "1 of" without total number
 - Progress indicator is visible on thank you pages when it should be hidden
@@ -240,13 +261,17 @@ During test implementation, the following defects were discovered:
 ## Future Framework Improvements
 
 ### 1. Visual Regression Testing
+
 Integrate Playwright's screenshot comparison or tools like Percy/Chromatic to automatically detect unintended UI changes. Capture baseline screenshots for each form step and flag visual differences for review.
 
 ### 2. Cross-Browser and Device Testing
+
 Extend test coverage to Firefox, Safari, and mobile devices (iOS Safari, Chrome Android). Use Playwright's device emulation or cloud services like BrowserStack for comprehensive compatibility testing.
 
 ### 3. API Testing Layer
+
 Add API-level tests using Playwright's request context to validate form submissions, error handling, and data validation. Provides faster, more reliable tests and better test data management.
 
 ### 4. Test Data Management & Fixtures
+
 Centralize test data using Playwright fixtures and factory functions. Implement data-driven testing for multiple input combinations and improve test maintainability.
