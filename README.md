@@ -231,3 +231,19 @@ During test implementation, the following defects were discovered:
 - **Timeout**: 30 seconds per test
 - **Parallel Workers**: 4
 - **Artifacts**: Screenshots and videos on failure only
+
+---
+
+## Future Framework Improvements
+
+### 1. Visual Regression Testing
+Integrate Playwright's screenshot comparison or tools like Percy/Chromatic to automatically detect unintended UI changes. Capture baseline screenshots for each form step and flag visual differences for review.
+
+### 2. Cross-Browser and Device Testing
+Extend test coverage to Firefox, Safari, and mobile devices (iOS Safari, Chrome Android). Use Playwright's device emulation or cloud services like BrowserStack for comprehensive compatibility testing.
+
+### 3. API Testing Layer
+Add API-level tests using Playwright's request context to validate form submissions, error handling, and data validation. Provides faster, more reliable tests and better test data management.
+
+### 4. Test Data Management & Fixtures
+Centralize test data using Playwright fixtures and factory functions. Implement data-driven testing for multiple input combinations and improve test maintainability.
