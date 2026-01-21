@@ -1,0 +1,11 @@
+node_modules/
+test-results/
+playwright-report/
+playwright/.cache/
+.DS_Store
+*.png
+*.jpg
+*.jpeg
+*.webm
+*.mp4
+package-lock.json
